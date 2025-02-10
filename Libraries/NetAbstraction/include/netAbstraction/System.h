@@ -1,25 +1,37 @@
 #pragma once
 
-#define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
+#ifdef _WIN32
+
+#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+#include <windows.h>
+#include <conio.h>
+#include <winsock2.h>
+#include <iphlpapi.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "iphlpapi.lib")
+using NetSocket = SOCKET;
+const NetSocket InvalidSocket = INVALID_SOCKET;
+
+#else // not _WIN32
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <ifaddrs.h>
+#include <netdb.h>
+using NetSocket = int;
+const NetSocket InvalidSocket = -1;
+
+#endif // _WIN32
 
 #include <string>
 #include <vector>
 
-#include <windows.h>
-#include <conio.h>
-
-#include <winsock2.h>
-#include <iphlpapi.h>
-#include <ws2tcpip.h>
-
-#pragma comment(lib, "Ws2_32.lib")
-#pragma comment(lib, "iphlpapi.lib")
-
-using NetSocket = SOCKET;
-const NetSocket InvalidSocket = INVALID_SOCKET;
-
-const unsigned int MaximumPacketSize = 1500;
-const unsigned int MaximumPayload = MaximumPacketSize - 2 * sizeof(unsigned short);
+unsigned int MaximumPacketSize(NetSocket sock);
+//const unsigned int MaximumPayload = MaximumPacketSize - sizeof(unsigned int);
 
 const unsigned char NetUDP = 0;
 const unsigned char NetTCP = 1;

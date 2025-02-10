@@ -45,6 +45,7 @@ bool ServerUDP::connect()
         return false;
     }
     _broadcast.ip = GetBroadcastAddress(intfToUse);
+    std::cout << _broadcast.ip << std::endl;
     _broadcast.port = _port+10;
     isConnected.store(true);
     return true;

@@ -113,6 +113,12 @@ int main(int argc, char* argv[])
                     std::cout << "\n'Q' key detected. Stopping loop...\n";
                     break;
                 }
+                if (key == 'l' || key == 'L') {
+                    Layer::Address addr;
+                    std::vector<char> data;
+                    std::cout << "Log::" << std::endl;
+                    //LayerUDP::partial_receive(-2, data, addr);
+                }
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }

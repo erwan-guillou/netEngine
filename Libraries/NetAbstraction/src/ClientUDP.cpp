@@ -74,15 +74,9 @@ void ClientUDP::disconnect()
     isConnected.store(false);
 }
 
-#include <chrono>
-
 bool ClientUDP::send(const std::vector<char>& data, bool fake) {
     if (!isConnected.load()) return false;
-    auto start = std::chrono::high_resolution_clock::now();
     bool res = LayerUDP::send(_unicastSock, data, serverAddr, fake);
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    std::cout << "Send log time : " << duration.count() << " usec for " << data.size() << " bytes" << std::endl;
     return res;
 }
 
