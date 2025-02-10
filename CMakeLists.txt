@@ -97,7 +97,8 @@ macro(add_library_with_dependencies LIB_NAME LIB_PATH FOLDER_NAME)
 
     # Add all .cpp files in the src directory
     file(GLOB LIB_SOURCES ${LIB_PATH}/src/*.cpp)
-    target_sources(${LIB_NAME} PRIVATE ${LIB_SOURCES})
+    file(GLOB_RECURSE LIB_HEADERS ${LIB_PATH}/include/*.h)
+    target_sources(${LIB_NAME} PRIVATE ${LIB_SOURCES} ${LIB_HEADERS})
 
     # Include the headers
     target_include_directories(${LIB_NAME} PUBLIC ${LIB_PATH}/include)
@@ -118,7 +119,8 @@ macro(add_sample SAMPLE_NAME SAMPLE_PATH)
 
     # Add all .cpp files in the src directory
     file(GLOB SAMPLE_SOURCES ${SAMPLE_PATH}/src/*.cpp)
-    target_sources(${SAMPLE_NAME} PRIVATE ${SAMPLE_SOURCES})
+    file(GLOB_RECURSE SAMPLE_HEADERS ${SAMPLE_PATH}/include/*.h)
+    target_sources(${SAMPLE_NAME} PRIVATE ${SAMPLE_SOURCES} ${SAMPLE_HEADERS})
 
     # Include the headers
     target_include_directories(${SAMPLE_NAME} PRIVATE ${SAMPLE_PATH}/include)
