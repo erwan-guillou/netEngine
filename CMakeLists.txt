@@ -4,25 +4,24 @@ set(EXTERNAL_FOLDER "External")
 set(LIBRARIES_FOLDER "Libraries")
 set(SAMPLES_FOLDER "Samples")
 
-# Get the directory name where CMakeLists.txt resides
+# Get project name dynamically
 get_filename_component(PROJECT_NAME ${CMAKE_SOURCE_DIR} NAME)
 project(${PROJECT_NAME})
 
 # Enable folders in Visual Studio
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# Move CMake auto-generated targets (like ALL_BUILD, ZERO_CHECK) into "CMake Targets"
+# Move CMake auto-generated targets into "CMake Targets"
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMake Targets")
 
 # Set C++ standard
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# List of external libraries
-set(EXTERNAL_LIBRARIES "")
-
-# Collect all libraries
+# Collect all available dependencies
 set(ALL_LIBRARIES "")
+set(EXTERNAL_LIBRARIES "")
+set(GLOBAL_LIBRARIES "")
 
 # Macro to parse YAML dependencies from uses.cfg
 macro(parse_yaml_dependencies YAML_FILE OUT_EXTERNAL OUT_LIBRARIES OUT_GLOBAL)
@@ -38,9 +37,9 @@ macro(parse_yaml_dependencies YAML_FILE OUT_EXTERNAL OUT_LIBRARIES OUT_GLOBAL)
         foreach(LINE ${YAML_LINES})
             string(STRIP "${LINE}" LINE)
             
-            if (LINE MATCHES "^- External$")
+            if (LINE MATCHES "^- ${EXTERNAL_FOLDER}$")
                 set(CURRENT_SECTION "EXTERNAL")
-            elseif (LINE MATCHES "^- Libraries$")
+            elseif (LINE MATCHES "^- ${LIBRARIES_FOLDER}$")
                 set(CURRENT_SECTION "LIBRARIES")
             elseif (LINE MATCHES "^- Globals$")
                 set(CURRENT_SECTION "GLOBAL")
@@ -128,29 +127,50 @@ macro(add_sample SAMPLE_NAME SAMPLE_PATH)
     link_dependencies(${SAMPLE_NAME} "${SAMPLE_PATH}/uses.cfg")
 
     # Set Visual Studio solution folder
-    set_target_properties(${SAMPLE_NAME} PROPERTIES FOLDER "Samples")
+    set_target_properties(${SAMPLE_NAME} PROPERTIES FOLDER "${SAMPLES_FOLDER}")
 endmacro()
 
-# Scan and add all external dependencies (External/*)
-file(GLOB EXTERNAL_DIRS RELATIVE ${CMAKE_SOURCE_DIR}/External ${CMAKE_SOURCE_DIR}/External/*)
-foreach(EXT_LIB ${EXTERNAL_DIRS})
-    if (IS_DIRECTORY ${CMAKE_SOURCE_DIR}/External/${EXT_LIB})
-        add_library_with_dependencies(${EXT_LIB} ${CMAKE_SOURCE_DIR}/External/${EXT_LIB} "External")
+# **Scan and Add Only Referenced External Dependencies**
+set(REFERENCED_EXTERNAL_LIBS "")
+
+# Scan all samples and libraries to determine required external dependencies
+file(GLOB SAMPLE_DIRS RELATIVE ${CMAKE_SOURCE_DIR}/${SAMPLES_FOLDER} ${CMAKE_SOURCE_DIR}/${SAMPLES_FOLDER}/*)
+file(GLOB LIBRARY_DIRS RELATIVE ${CMAKE_SOURCE_DIR}/${LIBRARIES_FOLDER} ${CMAKE_SOURCE_DIR}/${LIBRARIES_FOLDER}/*)
+
+foreach(DIR ${SAMPLE_DIRS} ${LIBRARY_DIRS})
+    if (IS_DIRECTORY ${CMAKE_SOURCE_DIR}/${SAMPLES_FOLDER}/${DIR})
+        set(USES_CFG "${CMAKE_SOURCE_DIR}/${SAMPLES_FOLDER}/${DIR}/uses.cfg")
+    elseif (IS_DIRECTORY ${CMAKE_SOURCE_DIR}/${LIBRARIES_FOLDER}/${DIR})
+        set(USES_CFG "${CMAKE_SOURCE_DIR}/${LIBRARIES_FOLDER}/${DIR}/uses.cfg")
+    endif()
+
+    if (EXISTS ${USES_CFG})
+        set(REQUIRED_EXTERNAL "")
+        set(REQUIRED_LIBRARIES "")
+        set(REQUIRED_GLOBAL "")
+        parse_yaml_dependencies(${USES_CFG} REQUIRED_EXTERNAL REQUIRED_LIBRARIES REQUIRED_GLOBAL)
+        list(APPEND REFERENCED_EXTERNAL_LIBS ${REQUIRED_EXTERNAL})
     endif()
 endforeach()
 
-# Scan and add all libraries in Libraries/
-file(GLOB LIBRARY_DIRS RELATIVE ${CMAKE_SOURCE_DIR}/Libraries ${CMAKE_SOURCE_DIR}/Libraries/*)
+# **Add Only the Referenced External Dependencies**
+foreach(EXT_LIB ${REFERENCED_EXTERNAL_LIBS})
+    set(LIB_PATH "${CMAKE_SOURCE_DIR}/${EXTERNAL_FOLDER}/${EXT_LIB}")
+    if (IS_DIRECTORY ${LIB_PATH})
+        add_library_with_dependencies(${EXT_LIB} ${LIB_PATH} "${EXTERNAL_FOLDER}")
+    endif()
+endforeach()
+
+# **Add Local Libraries**
 foreach(LIB ${LIBRARY_DIRS})
-    if (IS_DIRECTORY ${CMAKE_SOURCE_DIR}/Libraries/${LIB})
-        add_library_with_dependencies(${LIB} ${CMAKE_SOURCE_DIR}/Libraries/${LIB} "Libraries")
+    if (IS_DIRECTORY ${CMAKE_SOURCE_DIR}/${LIBRARIES_FOLDER}/${LIB})
+        add_library_with_dependencies(${LIB} ${CMAKE_SOURCE_DIR}/${LIBRARIES_FOLDER}/${LIB} "${LIBRARIES_FOLDER}")
     endif()
 endforeach()
 
-# Scan and add all samples (Samples/*)
-file(GLOB SAMPLE_DIRS RELATIVE ${CMAKE_SOURCE_DIR}/Samples ${CMAKE_SOURCE_DIR}/Samples/*)
+# **Add Samples**
 foreach(SAMPLE ${SAMPLE_DIRS})
-    if (IS_DIRECTORY ${CMAKE_SOURCE_DIR}/Samples/${SAMPLE})
-        add_sample(${SAMPLE} ${CMAKE_SOURCE_DIR}/Samples/${SAMPLE})
+    if (IS_DIRECTORY ${CMAKE_SOURCE_DIR}/${SAMPLES_FOLDER}/${SAMPLE})
+        add_sample(${SAMPLE} ${CMAKE_SOURCE_DIR}/${SAMPLES_FOLDER}/${SAMPLE})
     endif()
 endforeach()
