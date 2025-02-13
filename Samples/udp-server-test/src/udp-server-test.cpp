@@ -87,6 +87,15 @@ int SelectPort()
     return pn;
 }
 
+std::string SelectIp()
+{
+    std::string pn;
+    std::cout << "Enter client Ip : ";
+    std::cout.flush();
+    std::cin >> pn;
+    return pn;
+}
+
 int main(int argc, char* argv[])
 {
     printf("==============================================================================\n");
@@ -113,11 +122,15 @@ int main(int argc, char* argv[])
                     std::cout << "\n'Q' key detected. Stopping loop...\n";
                     break;
                 }
-                if (key == 'l' || key == 'L') {
-                    Layer::Address addr;
-                    std::vector<char> data;
-                    std::cout << "Log::" << std::endl;
-                    //LayerUDP::partial_receive(-2, data, addr);
+                if (key == 's' || key == 'S') {
+                    Layer::Address client;
+                    std::string message;
+                    client.ip = SelectIp();
+                    client.port = SelectPort();
+                    std::cout << "Message : ";
+                    std::cin >> message;
+                    std::vector<char> vec(message.begin(), message.end());
+                    server.send(client,vec);
                 }
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(50));

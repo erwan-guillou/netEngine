@@ -106,7 +106,6 @@ bool LayerTCP::receive(const Layer::Socket& socket, std::vector<char>& data, Lay
     unsigned int remainingBytes = 0;
 
     int bytesReceived = net_recv(socket, (char*)&transmittedLength, sizeof(transmittedLength), 0);
-
     data.resize(transmittedLength);
     receivedBytes = 0;
     remainingBytes = transmittedLength;
